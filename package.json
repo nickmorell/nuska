@@ -1,0 +1,39 @@
+{
+  "name": "nuska",
+  "version": "0.1.0",
+  "description": "Sever library for TypeScript",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "jest"
+  },
+  "keywords": [
+    "typescript",
+    "library",
+    "server",
+    "REST"
+  ],
+  "author": "Nicholas Morell",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nickmorell/server"
+  },
+  "bugs": {
+    "url": "https://github.com/nickmorell/server/issues"
+  },
+  "homepage": "https://github.com/nickmorell/server#readme",
+  "type": "commonjs",
+  "devDependencies": {
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.6",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3"
+  }
+}
