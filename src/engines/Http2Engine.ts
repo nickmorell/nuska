@@ -1,5 +1,4 @@
 import * as http2 from 'http2';
-import * as fs from 'fs';
 import { HttpMethod, IRequest } from '../interfaces/IRequest';
 import { IEngine } from '../interfaces/IEngine';
 import type { IResponse } from '../interfaces/IResponse';
