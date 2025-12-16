@@ -1,42 +1,3 @@
-"use strict";
-var __create = Object.create;
-var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getProtoOf = Object.getPrototypeOf;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __export = (target, all) => {
-  for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
-};
-var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
-  }
-  return to;
-};
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
-  // If the importer is in node compatibility mode or this is not an ESM
-  // file that has been converted to a CommonJS file using a Babel-
-  // compatible transform (i.e. "__esModule" has not been set), then set
-  // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
-  mod
-));
-var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
-
-// src/index.ts
-var index_exports = {};
-__export(index_exports, {
-  Http2Engine: () => Http2Engine,
-  HttpEngine: () => HttpEngine,
-  RouteGroup: () => RouteGroup,
-  Server: () => Server
-});
-module.exports = __toCommonJS(index_exports);
-
 // src/server.ts
 var Server = class {
   constructor(engine) {
@@ -316,8 +277,8 @@ var RouteGroup = class _RouteGroup {
 };
 
 // src/engines/HttpEngine.ts
-var http = __toESM(require("http"), 1);
-var url = __toESM(require("url"), 1);
+import * as http from "http";
+import * as url from "url";
 var HttpEngine = class {
   constructor(options = {}) {
     this.protocol = "HTTP/1.1";
@@ -480,7 +441,7 @@ var HttpEngine = class {
 };
 
 // src/engines/Http2Engine.ts
-var http2 = __toESM(require("http2"), 1);
+import * as http2 from "http2";
 var Http2Engine = class {
   constructor(options = {}) {
     this.protocol = "HTTP/2";
@@ -642,10 +603,10 @@ var Http2Engine = class {
     this.requestHandler = handler;
   }
 };
-// Annotate the CommonJS export names for ESM import in node:
-0 && (module.exports = {
+export {
   Http2Engine,
   HttpEngine,
   RouteGroup,
   Server
-});
+};
+//# sourceMappingURL=index.cjs.map

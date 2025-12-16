@@ -29,6 +29,13 @@
     "url": "https://github.com/nickmorell/server/issues"
   },
   "homepage": "https://github.com/nickmorell/server#readme",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "type": "module",
   "devDependencies": {
     "jest": "^30.2.0",
