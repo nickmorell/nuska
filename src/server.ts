@@ -40,8 +40,16 @@ export class Server implements IServer {
     if (this.isRouteGroup(routeInput)) {
       this._routes.push(...routeInput.getPrefixedRoutes());
     } else if (Array.isArray(routeInput)) {
+      routeInput.forEach(route => {
+        if(route.path === "") {
+          route.path = "/";
+        }
+      })
       this._routes.push(...routeInput);
     } else {
+      if(routeInput.path === "") {
+          routeInput.path = "/";
+        }
       this._routes.push(routeInput);
     }
 
@@ -68,6 +76,9 @@ export class Server implements IServer {
     try {
       await this._engine.listen(port, callback);
       console.log(`Server started on port ${port} using ${this._engine.protocol}`);
+      for(const route of this._routes) {
+        console.log(`Registered route: [${route.method}] ${route.path}`);
+      }
     } catch (error) {
       this._isRunning = false;
       throw error;
