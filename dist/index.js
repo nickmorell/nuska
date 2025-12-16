@@ -31,6 +31,7 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 var index_exports = {};
 __export(index_exports, {
   Http2Engine: () => Http2Engine,
+  HttpEngine: () => HttpEngine,
   RouteGroup: () => RouteGroup,
   Server: () => Server
 });
@@ -314,6 +315,170 @@ var RouteGroup = class _RouteGroup {
   }
 };
 
+// src/engines/HttpEngine.ts
+var http = __toESM(require("http"));
+var url = __toESM(require("url"));
+var HttpEngine = class {
+  constructor(options = {}) {
+    this.protocol = "HTTP/1.1";
+    this.isSecure = false;
+    const defaultOptions = {
+      maxConnections: 1e3,
+      timeout: 3e4,
+      keepAlive: true,
+      keepAliveTimeout: 5e3,
+      ...options
+    };
+    this.server = http.createServer(defaultOptions);
+    this.setupRequestHandler();
+  }
+  setupRequestHandler() {
+    this.server.on("request", async (req, res) => {
+      try {
+        const request = await this.createRequestFromHttp(req);
+        if (this.requestHandler) {
+          const response = await this.requestHandler(request);
+          await this.sendResponse(res, response);
+        } else {
+          res.writeHead(501, { "Content-Type": "text/plain" });
+          res.end("Not Implemented");
+        }
+      } catch (error) {
+        console.error("HTTP/1 Request Error:", error);
+        const errorMessage = this.getErrorMessage(error);
+        res.writeHead(500, { "Content-Type": "text/plain" });
+        res.end(errorMessage);
+      }
+    });
+    this.server.on("error", (error) => {
+      console.error("HTTP/1 Server Error:", error);
+    });
+  }
+  async createRequestFromHttp(req) {
+    const parsedUrl = url.parse(req.url || "/", true);
+    const method = this.normalizeHttpMethod(req.method || "GET");
+    const requestUrl = new URL(
+      `${req.headers["x-forwarded-proto"] || "http"}://${req.headers.host || "localhost"}${req.url || "/"}`
+    );
+    const query = {};
+    Object.entries(parsedUrl.query).forEach(([key, value]) => {
+      query[key] = Array.isArray(value) ? value[0] : value;
+    });
+    const params = {};
+    const requestHeaders = {};
+    Object.entries(req.headers).forEach(([key, value]) => {
+      if (typeof value === "string") {
+        requestHeaders[key] = value;
+      } else if (Array.isArray(value)) {
+        requestHeaders[key] = value[0];
+      }
+    });
+    let body = void 0;
+    const chunks = [];
+    return new Promise((resolve) => {
+      req.on("data", (chunk) => {
+        chunks.push(chunk);
+      });
+      req.on("end", () => {
+        if (chunks.length > 0) {
+          const rawBody = Buffer.concat(chunks).toString();
+          try {
+            body = JSON.parse(rawBody);
+          } catch {
+            body = rawBody;
+          }
+        }
+        resolve({
+          method,
+          url: requestUrl,
+          // Now using proper URL object
+          path: parsedUrl.pathname || "/",
+          headers: requestHeaders,
+          query,
+          params,
+          body,
+          protocol: this.protocol,
+          remoteAddress: req.socket.remoteAddress,
+          userAgent: requestHeaders["user-agent"]
+        });
+      });
+    });
+  }
+  async sendResponse(res, response) {
+    res.statusCode = response.status || 200;
+    Object.entries(response.headers || {}).forEach(([name, value]) => {
+      res.setHeader(name, value);
+    });
+    if (response.body !== void 0) {
+      if (typeof response.body === "string") {
+        res.write(response.body);
+      } else if (Buffer.isBuffer(response.body)) {
+        res.write(response.body);
+      } else {
+        const jsonString = JSON.stringify(response.body);
+        if (!response.headers?.["content-type"]) {
+          res.setHeader("Content-Type", "application/json");
+        }
+        res.write(jsonString);
+      }
+    }
+    res.end();
+  }
+  normalizeHttpMethod(method) {
+    const upperMethod = method.toUpperCase();
+    const validMethods = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "TRACE", "CONNECT"];
+    if (!validMethods.includes(upperMethod)) {
+      throw new Error(`Unsupported HTTP method: ${method}`);
+    }
+    return upperMethod;
+  }
+  getErrorMessage(error) {
+    if (error instanceof Error) {
+      return error.message;
+    }
+    if (typeof error === "string") {
+      return error;
+    }
+    try {
+      return JSON.stringify(error);
+    } catch {
+      return "Unknown error occurred";
+    }
+  }
+  async listen(port, callback) {
+    return new Promise((resolve, reject) => {
+      try {
+        this.server.listen(port, () => {
+          console.log(`HTTP/1.1 server listening on port ${port}`);
+          callback?.();
+          resolve();
+        });
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+  async close() {
+    return new Promise((resolve, reject) => {
+      try {
+        this.server.close((error) => {
+          if (error) {
+            reject(error);
+          } else {
+            console.log("HTTP/1.1 server closed");
+            resolve();
+          }
+        });
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+  setRequestHandler(handler) {
+    this.requestHandler = handler;
+  }
+};
+
 // src/engines/Http2Engine.ts
 var http2 = __toESM(require("http2"));
 var Http2Engine = class {
@@ -374,9 +539,9 @@ var Http2Engine = class {
     const scheme = headers[":scheme"] || "https";
     const authority = headers[":authority"] || "localhost";
     const method = this.normalizeHttpMethod(methodString);
-    const url = new URL(`${scheme}://${authority}${path}`);
+    const url2 = new URL(`${scheme}://${authority}${path}`);
     const query = {};
-    url.searchParams.forEach((value, key) => {
+    url2.searchParams.forEach((value, key) => {
       query[key] = value;
     });
     const params = {};
@@ -403,8 +568,8 @@ var Http2Engine = class {
         }
         resolve({
           method,
-          url,
-          path: url.pathname,
+          url: url2,
+          path: url2.pathname,
           headers: requestHeaders,
           query,
           params,
@@ -480,6 +645,7 @@ var Http2Engine = class {
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   Http2Engine,
+  HttpEngine,
   RouteGroup,
   Server
 });

@@ -107,6 +107,28 @@ declare class RouteGroup implements IRouteGroup {
     hasTag(tag: string): boolean;
 }
 
+interface HttpOptions {
+    maxConnections?: number;
+    timeout?: number;
+    keepAlive?: boolean;
+    keepAliveTimeout?: number;
+}
+declare class HttpEngine implements IEngine {
+    readonly protocol = "HTTP/1.1";
+    readonly isSecure = false;
+    private server;
+    private requestHandler?;
+    constructor(options?: HttpOptions);
+    private setupRequestHandler;
+    private createRequestFromHttp;
+    private sendResponse;
+    private normalizeHttpMethod;
+    private getErrorMessage;
+    listen(port: number, callback?: () => void): Promise<void>;
+    close(): Promise<void>;
+    setRequestHandler(handler: (request: IRequest) => Promise<IResponse>): void;
+}
+
 interface Http2Options {
     key?: string | Buffer;
     cert?: string | Buffer;
@@ -130,4 +152,4 @@ declare class Http2Engine implements IEngine {
     setRequestHandler(handler: (request: IRequest) => Promise<IResponse>): void;
 }
 
-export { Http2Engine, type HttpMethod, type IEngine, type IMiddleware, type IRequest, type IResponse, type IRoute, type IRouteGroup, type IServer, RouteGroup, Server };
+export { Http2Engine, HttpEngine, type HttpMethod, type IEngine, type IMiddleware, type IRequest, type IResponse, type IRoute, type IRouteGroup, type IServer, RouteGroup, Server };
