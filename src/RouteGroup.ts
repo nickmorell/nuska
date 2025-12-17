@@ -57,7 +57,7 @@ export class RouteGroup implements IRouteGroup {
   }
 
   // Method to add individual routes after creation
-  addRoute(route: IRoute): RouteGroup {
+  public addRoute(route: IRoute): RouteGroup {
     // Check for conflicts before adding
     const routeKey = `${route.method}:${this.prefix}${route.path}`;
     const existingRoute = this.routes.find(r => `${r.method}:${this.prefix}${r.path}` === routeKey);
@@ -76,7 +76,7 @@ export class RouteGroup implements IRouteGroup {
   }
 
   // Method to add middleware after creation
-  use(middleware: IMiddleware): RouteGroup {
+  public use(middleware: IMiddleware): RouteGroup {
     return new RouteGroup(
       this.prefix,
       this.routes,
@@ -87,16 +87,16 @@ export class RouteGroup implements IRouteGroup {
   }
 
   // Method to get all routes with prefixed paths
-  getPrefixedRoutes(): IRoute[] {
+  public getPrefixedRoutes(): IRoute[] {
     return this.routes.map(route => ({
       ...route,
       path: this.prefix + route.path,
-      middlewares: [...this.middlewares, ...route.middlewares],
+      middlewares: [...this.middlewares, ...(route.middlewares || [])],
     }));
   }
 
   // Method to find a specific route
-  findRoute(method: HttpMethod, path: string): IRoute | undefined {
+  public findRoute(method: HttpMethod, path: string): IRoute | undefined {
     return this.routes.find(route => route.method === method && route.path === path);
   }
 
@@ -106,7 +106,7 @@ export class RouteGroup implements IRouteGroup {
   }
 
   // Method to check if group has specific tag
-  hasTag(tag: string): boolean {
+  public hasTag(tag: string): boolean {
     return this.tags?.includes(tag) ?? false;
   }
 }

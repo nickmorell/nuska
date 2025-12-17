@@ -33,16 +33,19 @@ interface IEngine {
 }
 
 interface IMiddleware {
-    before?(request: IRequest, response: IResponse, next: (() => void)): Promise<void>;
-    after?(request: IRequest, response: IResponse, next: (() => void)): Promise<void>;
-    onError?(error: unknown, request: IRequest, response: IResponse, next: (() => void)): Promise<void>;
+    before?(request: IRequest, response: IResponse, next: () => void): Promise<void>;
+    after?(request: IRequest, response: IResponse, next: () => void): Promise<void>;
+    onError?(error: unknown, request: IRequest, response: IResponse, next: () => void): Promise<void>;
 }
 
 interface IRoute {
     method: HttpMethod;
     path: string;
-    handler: (req: IRequest, res: IResponse) => void | Promise<void>;
-    middlewares: IMiddleware[];
+    handler: (req: IRequest, res: IResponse) => void | Promise<{
+        status: number;
+        body: any;
+    }>;
+    middlewares?: IMiddleware[];
     description?: string;
     tags?: string[];
 }

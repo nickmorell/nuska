@@ -103,7 +103,7 @@ var Server = class {
     return routePath === requestPath;
   }
   async executeMiddlewareChain(route, request) {
-    const allMiddlewares = [...this._globalMiddlewares, ...route.middlewares];
+    const allMiddlewares = [...this._globalMiddlewares, ...route.middlewares ?? []];
     const response = this.createResponse();
     let index = 0;
     const next = async () => {
@@ -239,9 +239,7 @@ var RouteGroup = class _RouteGroup {
   // Method to add individual routes after creation
   addRoute(route) {
     const routeKey = `${route.method}:${this.prefix}${route.path}`;
-    const existingRoute = this.routes.find(
-      (r) => `${r.method}:${this.prefix}${r.path}` === routeKey
-    );
+    const existingRoute = this.routes.find((r) => `${r.method}:${this.prefix}${r.path}` === routeKey);
     if (existingRoute) {
       throw new Error(`Route already exists: ${routeKey}`);
     }
@@ -268,14 +266,12 @@ var RouteGroup = class _RouteGroup {
     return this.routes.map((route) => ({
       ...route,
       path: this.prefix + route.path,
-      middlewares: [...this.middlewares, ...route.middlewares]
+      middlewares: [...this.middlewares, ...route.middlewares || []]
     }));
   }
   // Method to find a specific route
   findRoute(method, path) {
-    return this.routes.find(
-      (route) => route.method === method && route.path === path
-    );
+    return this.routes.find((route) => route.method === method && route.path === path);
   }
   // Method to get route count
   get routeCount() {
@@ -398,7 +394,17 @@ var HttpEngine = class {
   }
   normalizeHttpMethod(method) {
     const upperMethod = method.toUpperCase();
-    const validMethods = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "TRACE", "CONNECT"];
+    const validMethods = [
+      "GET",
+      "POST",
+      "PUT",
+      "PATCH",
+      "DELETE",
+      "HEAD",
+      "OPTIONS",
+      "TRACE",
+      "CONNECT"
+    ];
     if (!validMethods.includes(upperMethod)) {
       throw new Error(`Unsupported HTTP method: ${method}`);
     }
@@ -465,29 +471,33 @@ var Http2Engine = class {
       ...options
     };
     if (!defaultOptions.key || !defaultOptions.cert) {
-      throw new Error("HTTP/2 requires SSL certificate and key. Provide key and cert options.");
+      this.server = http2.createServer();
+    } else {
+      this.server = http2.createSecureServer(defaultOptions);
     }
-    this.server = http2.createSecureServer(defaultOptions);
     this.setupStreamHandler();
   }
   setupStreamHandler() {
-    this.server.on("stream", async (stream, headers) => {
-      try {
-        const request = await this.createRequestFromHeaders(headers, stream);
-        if (this.requestHandler) {
-          const response = await this.requestHandler(request);
-          await this.sendResponse(stream, response);
-        } else {
-          stream.respond({ ":status": 501 });
-          stream.end("Not Implemented");
+    this.server.on(
+      "stream",
+      async (stream, headers) => {
+        try {
+          const request = await this.createRequestFromHeaders(headers, stream);
+          if (this.requestHandler) {
+            const response = await this.requestHandler(request);
+            await this.sendResponse(stream, response);
+          } else {
+            stream.respond({ ":status": 501 });
+            stream.end("Not Implemented");
+          }
+        } catch (error) {
+          console.error("HTTP2 Stream Error:", error);
+          const errorMessage = this.getErrorMessage(error);
+          stream.respond({ ":status": 500 });
+          stream.end(errorMessage);
         }
-      } catch (error) {
-        console.error("HTTP2 Stream Error:", error);
-        const errorMessage = this.getErrorMessage(error);
-        stream.respond({ ":status": 500 });
-        stream.end(errorMessage);
       }
-    });
+    );
     this.server.on("error", (error) => {
       console.error("HTTP2 Server Error:", error);
     });
@@ -555,7 +565,17 @@ var Http2Engine = class {
   }
   normalizeHttpMethod(method) {
     const upperMethod = method.toUpperCase();
-    const validMethods = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "TRACE", "CONNECT"];
+    const validMethods = [
+      "GET",
+      "POST",
+      "PUT",
+      "PATCH",
+      "DELETE",
+      "HEAD",
+      "OPTIONS",
+      "TRACE",
+      "CONNECT"
+    ];
     if (!validMethods.includes(upperMethod)) {
       throw new Error(`Unsupported HTTP method: ${method}`);
     }
