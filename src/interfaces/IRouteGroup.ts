@@ -1,5 +1,5 @@
-import type { IMiddleware } from "./IMiddleware";
-import type { IRoute } from "./IRoute";
+import type { IMiddleware } from './IMiddleware';
+import type { IRoute } from './IRoute';
 
 export interface IRouteGroup {
   // Core properties

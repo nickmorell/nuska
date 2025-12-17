@@ -15,7 +15,7 @@ export class Http2Engine implements IEngine {
   public readonly protocol = 'HTTP/2';
   public readonly isSecure = true;
 
-  private server: http2.Http2SecureServer;
+  private server: http2.Http2SecureServer | http2.Http2Server;
   private requestHandler?: (request: IRequest) => Promise<IResponse>;
 
   constructor(options: Http2Options = {}) {
@@ -24,45 +24,49 @@ export class Http2Engine implements IEngine {
       allowHTTP1: true, // Fallback to HTTP/1.1
       maxConnections: 1000,
       timeout: 30000,
-      ...options
+      ...options,
     };
 
     // Validate required SSL options for secure HTTP2
     if (!defaultOptions.key || !defaultOptions.cert) {
-      throw new Error('HTTP/2 requires SSL certificate and key. Provide key and cert options.');
+      this.server = http2.createServer();
+    } else {
+      this.server = http2.createSecureServer(defaultOptions);
     }
 
-    this.server = http2.createSecureServer(defaultOptions);
     this.setupStreamHandler();
   }
 
   private setupStreamHandler(): void {
-    this.server.on('stream', async (stream: http2.ServerHttp2Stream, headers: http2.IncomingHttpHeaders) => {
-      try {
-        // Convert HTTP2 headers to framework IRequest
-        const request = await this.createRequestFromHeaders(headers, stream);
+    this.server.on(
+      'stream',
+      async (stream: http2.ServerHttp2Stream, headers: http2.IncomingHttpHeaders) => {
+        try {
+          // Convert HTTP2 headers to framework IRequest
+          const request = await this.createRequestFromHeaders(headers, stream);
 
-        // Process request through framework handler
-        if (this.requestHandler) {
-          const response = await this.requestHandler(request);
+          // Process request through framework handler
+          if (this.requestHandler) {
+            const response = await this.requestHandler(request);
 
-          // Send response back through HTTP2 stream
-          await this.sendResponse(stream, response);
-        } else {
-          // No handler configured, send 501
-          stream.respond({ ':status': 501 });
-          stream.end('Not Implemented');
+            // Send response back through HTTP2 stream
+            await this.sendResponse(stream, response);
+          } else {
+            // No handler configured, send 501
+            stream.respond({ ':status': 501 });
+            stream.end('Not Implemented');
+          }
+        } catch (error: unknown) {
+          console.error('HTTP2 Stream Error:', error);
+
+          // Type-safe error handling
+          const errorMessage = this.getErrorMessage(error);
+
+          stream.respond({ ':status': 500 });
+          stream.end(errorMessage);
         }
-      } catch (error: unknown) {
-        console.error('HTTP2 Stream Error:', error);
-
-        // Type-safe error handling
-        const errorMessage = this.getErrorMessage(error);
-
-        stream.respond({ ':status': 500 });
-        stream.end(errorMessage);
       }
-    });
+    );
 
     // Handle server errors
     this.server.on('error', (error: Error) => {
@@ -87,7 +91,10 @@ export class Http2Engine implements IEngine {
     }
   }
 
-  private async createRequestFromHeaders(headers: http2.IncomingHttpHeaders, stream: http2.ServerHttp2Stream): Promise<IRequest> {
+  private async createRequestFromHeaders(
+    headers: http2.IncomingHttpHeaders,
+    stream: http2.ServerHttp2Stream
+  ): Promise<IRequest> {
     // Extract HTTP2 pseudo-headers
     const methodString = (headers[':method'] as string) || 'GET';
     const path = (headers[':path'] as string) || '/';
@@ -121,7 +128,7 @@ export class Http2Engine implements IEngine {
     let body: unknown = undefined;
     const chunks: Buffer[] = [];
 
-    return new Promise<IRequest>((resolve) => {
+    return new Promise<IRequest>(resolve => {
       stream.on('data', (chunk: Buffer) => {
         chunks.push(chunk);
       });
@@ -148,7 +155,7 @@ export class Http2Engine implements IEngine {
           body,
           protocol: this.protocol,
           remoteAddress: stream.session?.socket?.remoteAddress,
-          userAgent: requestHeaders['user-agent']
+          userAgent: requestHeaders['user-agent'],
         });
       });
     });
@@ -158,7 +165,17 @@ export class Http2Engine implements IEngine {
     const upperMethod = method.toUpperCase();
 
     // Validate that it's a valid HttpMethod
-    const validMethods: HttpMethod[] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS', 'TRACE', 'CONNECT'];
+    const validMethods: HttpMethod[] = [
+      'GET',
+      'POST',
+      'PUT',
+      'PATCH',
+      'DELETE',
+      'HEAD',
+      'OPTIONS',
+      'TRACE',
+      'CONNECT',
+    ];
 
     if (!validMethods.includes(upperMethod as HttpMethod)) {
       throw new Error(`Unsupported HTTP method: ${method}`);
@@ -171,7 +188,7 @@ export class Http2Engine implements IEngine {
     // Convert framework IResponse to HTTP2 headers
     const http2Headers: http2.OutgoingHttpHeaders = {
       ':status': response.status || 200,
-      ...response.headers
+      ...response.headers,
     };
 
     // Respond with headers

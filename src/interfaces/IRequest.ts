@@ -1,4 +1,4 @@
-export type HttpMethod = 
+export type HttpMethod =
   | 'GET'
   | 'POST'
   | 'PUT'
@@ -8,8 +8,12 @@ export type HttpMethod =
   | 'OPTIONS'
   | 'TRACE'
   | 'CONNECT';
-  
-export interface IRequest<TBody = unknown, TQuery = Record<string, string>, TParams = Record<string, string>> {
+
+export interface IRequest<
+  TBody = unknown,
+  TQuery = Record<string, string>,
+  TParams = Record<string, string>,
+> {
   // Core request metadata
   method: HttpMethod;
   url: URL;

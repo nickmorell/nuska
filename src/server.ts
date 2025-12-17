@@ -1,10 +1,10 @@
-import { IEngine } from "./interfaces/IEngine";
-import { IMiddleware } from "./interfaces/IMiddleware";
-import { IRequest, HttpMethod } from "./interfaces/IRequest";
-import type { IResponse } from "./interfaces/IResponse";
-import { IRoute } from "./interfaces/IRoute";
-import { IRouteGroup } from "./interfaces/IRouteGroup";
-import { IServer } from "./interfaces/IServer";
+import { IEngine } from './interfaces/IEngine';
+import { IMiddleware } from './interfaces/IMiddleware';
+import { IRequest, HttpMethod } from './interfaces/IRequest';
+import type { IResponse } from './interfaces/IResponse';
+import { IRoute } from './interfaces/IRoute';
+import { IRouteGroup } from './interfaces/IRouteGroup';
+import { IServer } from './interfaces/IServer';
 
 export class Server implements IServer {
   private _engine: IEngine;
@@ -41,15 +41,15 @@ export class Server implements IServer {
       this._routes.push(...routeInput.getPrefixedRoutes());
     } else if (Array.isArray(routeInput)) {
       routeInput.forEach(route => {
-        if(route.path === "") {
-          route.path = "/";
+        if (route.path === '') {
+          route.path = '/';
         }
-      })
+      });
       this._routes.push(...routeInput);
     } else {
-      if(routeInput.path === "") {
-          routeInput.path = "/";
-        }
+      if (routeInput.path === '') {
+        routeInput.path = '/';
+      }
       this._routes.push(routeInput);
     }
 
@@ -76,7 +76,7 @@ export class Server implements IServer {
     try {
       await this._engine.listen(port, callback);
       console.log(`Server started on port ${port} using ${this._engine.protocol}`);
-      for(const route of this._routes) {
+      for (const route of this._routes) {
         console.log(`Registered route: [${route.method}] ${route.path}`);
       }
     } catch (error) {
@@ -136,36 +136,36 @@ export class Server implements IServer {
   }
 
   private async executeMiddlewareChain(route: IRoute, request: IRequest): Promise<IResponse> {
-  const allMiddlewares = [...this._globalMiddlewares, ...route.middlewares];
-  const response = this.createResponse();
+    const allMiddlewares = [...this._globalMiddlewares, ...(route.middlewares ?? [])];
+    const response = this.createResponse();
 
-  let index = 0;
-  const next = async (): Promise<void> => {
-    if (index >= allMiddlewares.length) {
-      await route.handler(request, response);
-      return;
-    }
-
-    const middleware = allMiddlewares[index++];
-
-    try {
-      if (middleware.before) {
-        await middleware.before(request, response, next);
-      } else {
-        await next();
+    let index = 0;
+    const next = async (): Promise<void> => {
+      if (index >= allMiddlewares.length) {
+        await route.handler(request, response);
+        return;
       }
-    } catch (error: unknown) {
-      if (middleware.onError) {
-        await middleware.onError(error, request, response, next);
-      } else {
-        throw error;
-      }
-    }
-  };
 
-  await next();
-  return response;
-}
+      const middleware = allMiddlewares[index++];
+
+      try {
+        if (middleware.before) {
+          await middleware.before(request, response, next);
+        } else {
+          await next();
+        }
+      } catch (error: unknown) {
+        if (middleware.onError) {
+          await middleware.onError(error, request, response, next);
+        } else {
+          throw error;
+        }
+      }
+    };
+
+    await next();
+    return response;
+  }
 
   private async handleError(error: unknown, request: IRequest): Promise<IResponse> {
     console.error('Request processing error:', error);
@@ -188,59 +188,67 @@ export class Server implements IServer {
   }
 
   private createResponse(): IResponse {
-  let status: number | undefined; // Don't default to 200
-  let headers: Record<string, string> = {};
-  let body: unknown;
-  let sent: boolean = false;
-  let finished: boolean = false;
+    let status: number | undefined; // Don't default to 200
+    let headers: Record<string, string> = {};
+    let body: unknown;
+    let sent: boolean = false;
+    let finished: boolean = false;
 
-  return {
-    get status(): number {
-      // If no status was explicitly set, default to 200 for successful responses
-      return status ?? 200;
-    },
-    get headers(): Record<string, string> { return { ...headers }; },
-    get body(): unknown { return body; },
-    get sent(): boolean { return sent; },
-    get finished(): boolean { return finished; },
+    return {
+      get status(): number {
+        // If no status was explicitly set, default to 200 for successful responses
+        return status ?? 200;
+      },
+      get headers(): Record<string, string> {
+        return { ...headers };
+      },
+      get body(): unknown {
+        return body;
+      },
+      get sent(): boolean {
+        return sent;
+      },
+      get finished(): boolean {
+        return finished;
+      },
 
-    setStatus(code: number): IResponse {
-      if (sent) {
-        throw new Error('Cannot set status after response has been sent');
-      }
-      status = code;
-      return this;
-    },
+      setStatus(code: number): IResponse {
+        if (sent) {
+          throw new Error('Cannot set status after response has been sent');
+        }
+        status = code;
+        return this;
+      },
 
-    setHeader(name: string, value: string): IResponse {
-      if (sent) {
-        throw new Error('Cannot set headers after response has been sent');
-      }
-      headers[name] = value;
-      return this;
-    },
+      setHeader(name: string, value: string): IResponse {
+        if (sent) {
+          throw new Error('Cannot set headers after response has been sent');
+        }
+        headers[name] = value;
+        return this;
+      },
 
-    json(data: unknown): void {
-      this.setHeader('content-type', 'application/json');
-      this.send(data);
-    },
+      json(data: unknown): void {
+        this.setHeader('content-type', 'application/json');
+        this.send(data);
+      },
 
-    send(data?: unknown): void {
-      if (sent) {
-        throw new Error('Response has already been sent');
-      }
+      send(data?: unknown): void {
+        if (sent) {
+          throw new Error('Response has already been sent');
+        }
 
-      // If no status was set and we're sending data, assume 200
-      if (status === undefined) {
-        status = 200;
-      }
+        // If no status was set and we're sending data, assume 200
+        if (status === undefined) {
+          status = 200;
+        }
 
-      body = data;
-      sent = true;
-      finished = true;
-    }
-  };
-}
+        body = data;
+        sent = true;
+        finished = true;
+      },
+    };
+  }
 
   private createErrorResponse(status: number, message: string): IResponse {
     const response = this.createResponse();

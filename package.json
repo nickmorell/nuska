@@ -11,7 +11,12 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "test": "jest"
+    "test": "jest",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\" \"tests/**/*.{ts,tsx}\" \"*.md\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx}\" \"tests/**/*.{ts,tsx}\" \"*.md\"",
+    "format:src": "prettier --write \"src/**/*.{ts,tsx}\"",
+    "format:tests": "prettier --write \"tests/**/*.{ts,tsx}\""
+    
   },
   "keywords": [
     "typescript",
@@ -38,7 +43,10 @@
   },
   "type": "module",
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "jest": "^30.2.0",
+    "jest-ts": "^1.1.22",
+    "prettier": "3.7.4",
     "ts-jest": "^29.4.6",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3"

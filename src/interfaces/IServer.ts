@@ -1,7 +1,7 @@
-import type { IEngine } from "./IEngine";
-import type { IMiddleware } from "./IMiddleware";
-import type { IRoute } from "./IRoute";
-import type { IRouteGroup } from "./IRouteGroup";
+import type { IEngine } from './IEngine';
+import type { IMiddleware } from './IMiddleware';
+import type { IRoute } from './IRoute';
+import type { IRouteGroup } from './IRouteGroup';
 
 export interface IServer {
   // Core lifecycle management

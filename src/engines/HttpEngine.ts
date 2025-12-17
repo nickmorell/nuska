@@ -23,7 +23,7 @@ export class HttpEngine implements IEngine {
       timeout: 30000,
       keepAlive: true,
       keepAliveTimeout: 5000,
-      ...options
+      ...options,
     };
 
     this.server = http.createServer(defaultOptions);
@@ -64,74 +64,73 @@ export class HttpEngine implements IEngine {
     });
   }
 
- private async createRequestFromHttp(req: http.IncomingMessage): Promise<IRequest> {
-  // Parse URL to extract components
-  const parsedUrl = url.parse(req.url || '/', true);
+  private async createRequestFromHttp(req: http.IncomingMessage): Promise<IRequest> {
+    // Parse URL to extract components
+    const parsedUrl = url.parse(req.url || '/', true);
 
-  // Convert string to HttpMethod
-  const method: HttpMethod = this.normalizeHttpMethod(req.method || 'GET');
+    // Convert string to HttpMethod
+    const method: HttpMethod = this.normalizeHttpMethod(req.method || 'GET');
 
-  // Create a proper URL object from the parsed URL
-  const requestUrl = new URL(
-    `${req.headers['x-forwarded-proto'] || 'http'}://${req.headers.host || 'localhost'}${req.url || '/'}`
-  );
+    // Create a proper URL object from the parsed URL
+    const requestUrl = new URL(
+      `${req.headers['x-forwarded-proto'] || 'http'}://${req.headers.host || 'localhost'}${req.url || '/'}`
+    );
 
-  // Extract query parameters
-  const query: Record<string, string> = {};
-  Object.entries(parsedUrl.query).forEach(([key, value]) => {
-    query[key] = Array.isArray(value) ? value[0] : (value as string);
-  });
-
-  // Extract route parameters (simplified - you'd want more sophisticated path parsing)
-  const params: Record<string, string> = {};
-
-  // Convert HTTP/1 headers to standard format
-  const requestHeaders: Record<string, string> = {};
-  Object.entries(req.headers).forEach(([key, value]) => {
-    if (typeof value === 'string') {
-      requestHeaders[key] = value;
-    } else if (Array.isArray(value)) {
-      requestHeaders[key] = value[0];
-    }
-  });
-
-  // Parse body (HTTP/1 requests are readable streams)
-  let body: unknown = undefined;
-  const chunks: Buffer[] = [];
-
-  return new Promise<IRequest>((resolve) => {
-    req.on('data', (chunk: Buffer) => {
-      chunks.push(chunk);
+    // Extract query parameters
+    const query: Record<string, string> = {};
+    Object.entries(parsedUrl.query).forEach(([key, value]) => {
+      query[key] = Array.isArray(value) ? value[0] : (value as string);
     });
 
-    req.on('end', () => {
-      if (chunks.length > 0) {
-        const rawBody = Buffer.concat(chunks).toString();
+    // Extract route parameters (simplified - you'd want more sophisticated path parsing)
+    const params: Record<string, string> = {};
 
-        // Try to parse as JSON, fall back to raw string
-        try {
-          body = JSON.parse(rawBody);
-        } catch {
-          body = rawBody;
-        }
+    // Convert HTTP/1 headers to standard format
+    const requestHeaders: Record<string, string> = {};
+    Object.entries(req.headers).forEach(([key, value]) => {
+      if (typeof value === 'string') {
+        requestHeaders[key] = value;
+      } else if (Array.isArray(value)) {
+        requestHeaders[key] = value[0];
       }
+    });
 
-      resolve({
-        method,
-        url: requestUrl, // Now using proper URL object
-        path: parsedUrl.pathname || '/',
-        headers: requestHeaders,
-        query,
-        params,
-        body,
-        protocol: this.protocol,
-        remoteAddress: req.socket.remoteAddress,
-        userAgent: requestHeaders['user-agent']
+    // Parse body (HTTP/1 requests are readable streams)
+    let body: unknown = undefined;
+    const chunks: Buffer[] = [];
+
+    return new Promise<IRequest>(resolve => {
+      req.on('data', (chunk: Buffer) => {
+        chunks.push(chunk);
+      });
+
+      req.on('end', () => {
+        if (chunks.length > 0) {
+          const rawBody = Buffer.concat(chunks).toString();
+
+          // Try to parse as JSON, fall back to raw string
+          try {
+            body = JSON.parse(rawBody);
+          } catch {
+            body = rawBody;
+          }
+        }
+
+        resolve({
+          method,
+          url: requestUrl, // Now using proper URL object
+          path: parsedUrl.pathname || '/',
+          headers: requestHeaders,
+          query,
+          params,
+          body,
+          protocol: this.protocol,
+          remoteAddress: req.socket.remoteAddress,
+          userAgent: requestHeaders['user-agent'],
+        });
       });
     });
-  });
-}
-
+  }
 
   private async sendResponse(res: http.ServerResponse, response: IResponse): Promise<void> {
     // Set status code
@@ -169,7 +168,17 @@ export class HttpEngine implements IEngine {
     const upperMethod = method.toUpperCase();
 
     // Validate that it's a valid HttpMethod
-    const validMethods: HttpMethod[] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS', 'TRACE', 'CONNECT'];
+    const validMethods: HttpMethod[] = [
+      'GET',
+      'POST',
+      'PUT',
+      'PATCH',
+      'DELETE',
+      'HEAD',
+      'OPTIONS',
+      'TRACE',
+      'CONNECT',
+    ];
 
     if (!validMethods.includes(upperMethod as HttpMethod)) {
       throw new Error(`Unsupported HTTP method: ${method}`);

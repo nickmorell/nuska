@@ -1,5 +1,5 @@
-import type { IRequest } from "./IRequest";
-import type { IResponse } from "./IResponse";
+import type { IRequest } from './IRequest';
+import type { IResponse } from './IResponse';
 
 export interface IEngine {
   // Protocol lifecycle

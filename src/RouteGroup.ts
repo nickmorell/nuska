@@ -1,7 +1,7 @@
-import { IMiddleware } from "./interfaces/IMiddleware";
-import { HttpMethod } from "./interfaces/IRequest";
-import { IRoute } from "./interfaces/IRoute";
-import { IRouteGroup } from "./interfaces/IRouteGroup";
+import { IMiddleware } from './interfaces/IMiddleware';
+import { HttpMethod } from './interfaces/IRequest';
+import { IRoute } from './interfaces/IRoute';
+import { IRouteGroup } from './interfaces/IRouteGroup';
 
 export class RouteGroup implements IRouteGroup {
   public readonly prefix: string;
@@ -60,9 +60,7 @@ export class RouteGroup implements IRouteGroup {
   addRoute(route: IRoute): RouteGroup {
     // Check for conflicts before adding
     const routeKey = `${route.method}:${this.prefix}${route.path}`;
-    const existingRoute = this.routes.find(r => 
-      `${r.method}:${this.prefix}${r.path}` === routeKey
-    );
+    const existingRoute = this.routes.find(r => `${r.method}:${this.prefix}${r.path}` === routeKey);
 
     if (existingRoute) {
       throw new Error(`Route already exists: ${routeKey}`);
@@ -93,15 +91,13 @@ export class RouteGroup implements IRouteGroup {
     return this.routes.map(route => ({
       ...route,
       path: this.prefix + route.path,
-      middlewares: [...this.middlewares, ...route.middlewares]
+      middlewares: [...this.middlewares, ...route.middlewares],
     }));
   }
 
   // Method to find a specific route
   findRoute(method: HttpMethod, path: string): IRoute | undefined {
-    return this.routes.find(route => 
-      route.method === method && route.path === path
-    );
+    return this.routes.find(route => route.method === method && route.path === path);
   }
 
   // Method to get route count

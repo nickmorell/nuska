@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+dist/
+coverage/
+
+# Build outputs
+*.tsbuildinfo
+
+# Config files that have specific formatting
+jest.config.cjs
+tsup.config.ts
+
+# Documentation files
+CHANGELOG.md
+LICENSE
+
+# Test files (optional - if you want different formatting for tests)
+tests/
+*.test.ts
+*.spec.ts
